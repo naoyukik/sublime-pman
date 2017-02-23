@@ -1,7 +1,13 @@
+from functools import partial
+import os
 import subprocess
+import html
+
 import sublime
 import sublime_plugin
-import os
+
+from .anaconda_lib.helpers import get_settings
+from .anaconda_lib.tooltips import Tooltip
 
 class Pref:
     @staticmethod
@@ -71,14 +77,47 @@ class BasePman(sublime_plugin.TextCommand):
             self.render(keyword, data)
 
     def render(self, keyword, output):
-        output_view = sublime.active_window().get_output_panel("pman")
-        output_view.set_read_only(False)
-        output_view.run_command('output_helper', {'text': output})
+        self.print_popup(output)
 
-        output_view.sel().clear()
-        output_view.sel().add(sublime.Region(0))
-        output_view.set_read_only(True)
-        sublime.active_window().run_command("show_panel", {"panel": "output.pman"})
+        # output_view = sublime.active_window().get_output_panel("pman")
+        # output_view.set_read_only(False)
+        # output_view.run_command('output_helper', {'text': output})
+
+        # output_view.sel().clear()
+        # output_view.sel().add(sublime.Region(0))
+        # output_view.set_read_only(True)
+        # sublime.active_window().run_command("show_panel", {"panel": "output.pman"})
+
+    def print_doc(self, edit: sublime.Edit) -> None:
+        """Print the documentation string into a Sublime Text panel
+        """
+
+        doc_panel = self.view.window().create_output_panel(
+            'anaconda_documentation'
+        )
+
+        doc_panel.set_read_only(False)
+        region = sublime.Region(0, doc_panel.size())
+        doc_panel.erase(edit, region)
+        doc_panel.insert(edit, 0, self.documentation)
+        self.documentation = None
+        doc_panel.set_read_only(True)
+        doc_panel.show(0)
+        self.view.window().run_command(
+            'show_panel', {'panel': 'output.anaconda_documentation'}
+        )
+
+    def print_popup(self, edit) -> None:
+        """Show message in a popup
+        """
+        dlines = str.splitlines(html.escape(edit, False))
+        name = dlines[5].strip()
+        docstring = '<br>'.join(dlines[7:(len(dlines)-2)])
+        content = {'name': name, 'content': docstring}
+        self.documentation = None
+        css = get_settings(self.view, 'anaconda_tooltip_theme', 'popup')
+        Tooltip(css).show_tooltip(
+            self.view, 'doc', content, partial(self.print_doc, edit))
 
 
 class PmanManualForKeywordCommand(BasePman):
