@@ -1,9 +1,7 @@
-import datetime
-import os
 import subprocess
-import time
 import sublime
 import sublime_plugin
+import os
 
 class Pref:
     @staticmethod
@@ -27,7 +25,7 @@ def plugin_loaded():
 
 def debug_message(msg):
     """Debug functionality"""
-    if Pref.show_debug == True:
+    if Pref.show_debug is True:
         print("[pman] " + msg)
 
 
@@ -37,20 +35,25 @@ class PmanCommand():
         self.entity = entity
 
     def execute(self):
-        pmanCmd = [Pref.pman_executable_path]
-        pmanCmd.append(self.entity)
         colCmd = [Pref.pman_col_executable_path]
         colCmd.append('-b')
 
-        debug_message(' '.join(pmanCmd))
-        debug_message(' '.join(colCmd))
+        if os.name == 'nt':
+            pmanCmd = ['man', '-M', Pref.pman_executable_path, self.entity]
+            pman = subprocess.Popen(pmanCmd, stdout=subprocess.PIPE, shell=True)
+            col = subprocess.Popen(colCmd, stdout=subprocess.PIPE, stdin=pman.stdout, shell=True)
+        else:
+            pmanCmd = [Pref.pman_executable_path]
+            pmanCmd.append(self.entity)
 
-        pman = subprocess.Popen(pmanCmd, stdout=subprocess.PIPE)
-        col = subprocess.Popen(colCmd, stdout=subprocess.PIPE, stdin=pman.stdout)
+            debug_message(' '.join(pmanCmd))
+            debug_message(' '.join(colCmd))
+            pman = subprocess.Popen(pmanCmd, stdout=subprocess.PIPE)
+            col = subprocess.Popen(colCmd, stdout=subprocess.PIPE, stdin=pman.stdout)
 
         data = col.communicate()[0]
-        return data
 
+        return data
 
 class BasePman(sublime_plugin.TextCommand):
     """Base class for pman functionality"""
