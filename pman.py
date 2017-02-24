@@ -111,13 +111,13 @@ class BasePman(sublime_plugin.TextCommand):
         """Show message in a popup
         """
         dlines = str.splitlines(html.escape(edit, False))
-        name = dlines[5].strip()
-        docstring = '<br>'.join(dlines[7:(len(dlines)-2)])
-        content = {'name': name, 'content': docstring}
+        # name = dlines[5].strip()
+        docstring = '<br>'.join(dlines[5:(len(dlines) - 2)])
+        content = {'content': docstring}
         self.documentation = None
         css = get_settings(self.view, 'anaconda_tooltip_theme', 'popup')
         Tooltip(css).show_tooltip(
-            self.view, 'doc', content, partial(self.print_doc, edit))
+            self.view, 'signature', content, partial(self.print_doc, edit))
 
 
 class PmanManualForKeywordCommand(BasePman):
