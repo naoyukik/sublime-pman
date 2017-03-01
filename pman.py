@@ -1,7 +1,12 @@
 import subprocess
+import os
+import html
+import re
+
 import sublime
 import sublime_plugin
-import os
+
+import styled_popup
 
 class Pref:
     @staticmethod
@@ -10,6 +15,7 @@ class Pref:
         Pref.show_debug = settings.get('show_debug', False)
         Pref.pman_executable_path = settings.get('pman_executable_path', 'pman')
         Pref.pman_col_executable_path = settings.get('pman_col_executable_path', 'col')
+        Pref.pman_show_doc_mode = settings.get('pman_show_doc_mode', 'doc')
 
 
 st_version = 2
@@ -40,6 +46,8 @@ class PmanCommand():
 
         if os.name == 'nt':
             pmanCmd = ['man', '-M', Pref.pman_executable_path, self.entity]
+            debug_message(' '.join(pmanCmd))
+            debug_message(' '.join(colCmd))
             pman = subprocess.Popen(pmanCmd, stdout=subprocess.PIPE, shell=True)
             col = subprocess.Popen(colCmd, stdout=subprocess.PIPE, stdin=pman.stdout, shell=True)
         else:
@@ -59,7 +67,6 @@ class BasePman(sublime_plugin.TextCommand):
     """Base class for pman functionality"""
     def execute(self, keyword):
         data = PmanCommand(keyword).execute()
-
         try:
             data = data.decode('utf-8')
         except UnicodeDecodeError:
@@ -71,14 +78,37 @@ class BasePman(sublime_plugin.TextCommand):
             self.render(keyword, data)
 
     def render(self, keyword, output):
-        output_view = sublime.active_window().get_output_panel("pman")
-        output_view.set_read_only(False)
-        output_view.run_command('output_helper', {'text': output})
+        mode = Pref.pman_show_doc_mode
+        current_window = sublime.active_window()
+        if mode == 'popup':
+            dlines = str.splitlines(html.escape(output, False))
 
-        output_view.sel().clear()
-        output_view.sel().add(sublime.Region(0))
-        output_view.set_read_only(True)
-        sublime.active_window().run_command("show_panel", {"panel": "output.pman"})
+            doc_string = '<br>'.join(dlines[2:])
+            match_words = (
+                'NAME', 'SYNOPSIS', 'DESCRIPTION', 'EXAMPLES', 'SEE ALSO',
+                'PARAMETERS', 'RETURN VALUES', 'CHANGELOG', 'EXAMPLES',
+                'INTRODUCTION', 'CLASS SYNOPSIS')
+            regex = '<br>(' + '|'.join(match_words) + ')<br>'
+            doc_string = re.sub(
+                regex,
+                '<br><span class="keyword" \
+                style="font-weight: bold;">\\1</span><br>',
+                doc_string)
+
+            width = current_window.active_view().viewport_extent()[0] * 0.8
+            styled_popup.show_popup(
+                current_window.active_view(),
+                doc_string,
+                max_width=width)
+        else:
+            output_view = current_window.get_output_panel("pman")
+            output_view.set_read_only(False)
+            output_view.run_command('output_helper', {'text': output})
+
+            output_view.sel().clear()
+            output_view.sel().add(sublime.Region(0))
+            output_view.set_read_only(True)
+            current_window.run_command("show_panel", {"panel": "output.pman"})
 
 
 class PmanManualForKeywordCommand(BasePman):
