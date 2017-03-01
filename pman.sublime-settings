@@ -8,5 +8,10 @@
 
     // It seems python/sublime cannot always find the pman application
     // If empty, then use PATH version of pman, else use the set value
-    "pman_col_executable_path": "/usr/bin/col"
+    "pman_col_executable_path": "/usr/bin/col",
+
+    // This option is show document mode setting.
+    // Param is popup or doc.
+    // popup: only sublime text version >= 3080
+    "pman_show_doc_mode": "doc"
 }
