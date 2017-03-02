@@ -4,6 +4,11 @@
 
     // It seems python/sublime cannot always find the pman application
     // If empty, then use PATH version of pman, else use the set value
+    // In the case of Windows, /c/Users/...{man page dir}
+    // ex.) 1. composer require gonzaloserrano/pman-php-manual
+    // 2. pman_executable_path
+    // "pman_executable_path": "%USERPROFILE%/AppData/Roaming/Composer/vendor/gonzaloserrano/pman-php-manual"
+    // notice: "man page dir" setting is Windows only
     "pman_executable_path": "/usr/local/bin/pman",
 
     // It seems python/sublime cannot always find the pman application
